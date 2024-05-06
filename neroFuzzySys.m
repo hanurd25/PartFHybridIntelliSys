@@ -1,4 +1,5 @@
 %%THIS IS THE CODE FOR A RULE BASE 2 SYSTEM
+%% Develop a FIS using command line in matlab
 %mamfis is for Mamdani while sugfis is for sugeno
 fis = mamfis('Name', "HVACMamdaniRuleBase2");
 %% Create a Mamdani fuzzy inference system .
@@ -108,8 +109,8 @@ temperature = rand(numSamples, 1) * 1.00;
 degree_of_utility = rand(numSamples, 1) * 1.00;  
 inputs = [humidity, temperature, degree_of_utility];
 
-%% Adjusting inputs before processing
-inputs = min(max(inputs, [0 0 0]), [0.7 1 1]);  % Ensure all inputs are within valid ranges
+%% Adjusting the inputs
+inputs = min(max(inputs, [0 0 0]), [0.7 1 1]); 
 
 %% Process adjusted inputs through FIS
 outputs = zeros(numSamples, 1);
@@ -118,13 +119,9 @@ for i = 1:numSamples
 end
 
 
-%% This is my training and testning sets
-%Data Partitioning
+%%
 cv = cvpartition(numSamples, 'HoldOut', 0.3);
-%This is my training set
-%Index Extraction
 idxTrain = training(cv);
-%This is my test set
 idxTest = test(cv);
 
 
@@ -160,7 +157,11 @@ rmse = sqrt(mse);
 meanError = mean(outputsTest - predictedOutputs);
 stdDeviation = std(outputsTest - predictedOutputs);
 
-fprintf('MSE: %.4f\nRMSE: %.4f\nMean Error: %.4f\nStandard Deviation: %.4f\n', mse, rmse, meanError, stdDeviation);
+fprintf('MSE: %f\n', mse);
+fprintf('RMSE: %f\n', rmse);
+fprintf('Mean Error: %f\n', meanError);
+fprintf('Standard Deviation: %f\n', stdDeviation);
+
 
 figure;
 plot(outputsTest, 'bo-', 'DisplayName', 'Actual Outputs');
@@ -181,25 +182,57 @@ outOfRangeInput = [0.8, 1.2, 1.2]; % Beyond specified input ranges
 %% Adjust out-of-range inputs to the nearest valid range before evaluation
 adjustedInput = min(max(outOfRangeInput, [0 0 0]), [0.7 1 1]);
 
-%% Evaluate the FIS with adjusted inputs
+%% Evaluate the FIS with sets of adjusted inputs
+
+outOfRangeInputs = [
+    0.8, 1.2, 1.2;  
+    0.9, 1.3, 1.1;  
+    1.0, 1.5, 1.5;  
+    1.2, 2.0, 2.0;  
+    -0.1, -0.2, -0.1  
+];
+
+
 fisOutput = evalfis(fis, adjustedInput);
 nfOutput = evalfis(anfisModel, adjustedInput);
 
-%% Output the results with adjusted inputs
-fprintf('Adjusted FIS Output: %.4f\nAdjusted Neuro-Fuzzy Output: %.4f\n', fisOutput, nfOutput);
 
-%% Output the results with adjusted inputs
-fprintf('Adjusted FIS Output: %.4f\nAdjusted Neuro-Fuzzy Output: %.4f\n', fisOutput, nfOutput);
+fisOutputs = zeros(size(outOfRangeInputs, 1), 1);
+nfOutputs = zeros(size(outOfRangeInputs, 1), 1);
+
+%Evaluating the FIS and Neuro with adjusted inputs
+for i = 1:size(outOfRangeInputs, 1)
+    adjustedInput = min(max(outOfRangeInputs(i, :), [0 0 0]), [0.7 1 1]);
+
+  
+    fisOutputs(i) = evalfis(fis, adjustedInput);
+    nfOutputs(i) = evalfis(anfisModel, adjustedInput);
+end
+
+
+
+
+
+figure;
+bar([fisOutputs, nfOutputs]);
+title('Comparison of FIS and neuro Outputs for sets with adjusted inputs');
+xlabel('Input set');
+ylabel('Output Value');
+legend('FIS', 'Neuro-fuzzy');
+set(gca, 'XTick', 1:size(outOfRangeInputs, 1), 'XTickLabel', {'Set 1', 'Set 2', 'Set 3', 'Set 4', 'Set 5'});
+
+
+
 %% Display how the neural fuzzy system would look
 plotfis(anfisModel);
 %% Display comparison plot or any further analysis
 figure;
-plot(outputsTest, 'bo-', 'DisplayName', 'Actual Outputs');
+plot(outputsTest, 'bo-', 'DisplayName', 'Actual output');
 hold on;
-plot(predictedOutputs, 'ro-', 'DisplayName', 'Predicted Outputs');
-title('Comparison of Actual and Predicted Outputs');
-xlabel('Sample Index');
-ylabel('HVAC Output');
+plot(predictedOutputs, 'ro-', 'DisplayName', 'Predicted output');
+title('Comparison of actual and predicted outputs');
+xlabel('Sample index');
+ylabel('HVAC plant output');
 legend show;
 grid on;
 %%
@@ -207,17 +240,18 @@ grid on;
 figure;
 plot(outputsTest, predictedOutputs, 'ko'); % Plot predicted vs. actual as points
 hold on;
-plot([min(outputsTest) max(outputsTest)], [min(outputsTest) max(outputsTest)], 'b--'); % Plot line y=x for reference
-title('Predicted Outputs vs. Actual Outputs');
+%Ccreating a reference line
+plot([min(outputsTest) max(outputsTest)], [min(outputsTest) max(outputsTest)], 'b--');
+title('Predicted Outputs vs. actual outputs');
 xlabel('Actual Outputs');
 ylabel('Predicted Outputs');
 grid on;
-legend('Predicted vs. Actual', 'y = x (Perfect Prediction Line)', 'Location', 'best');
+legend('Predicted vs. Actual', 'y = x', 'Location', 'best');
 
 %% Plotting training errors to monitor performance over epochs
 figure;
 plot(trainError);
-title('Training Error over Epochs');
-xlabel('Epoch Number');
-ylabel('Training Error');
+title('Training error over epochs/iterations');
+xlabel('Epoch/iterations');
+ylabel('Training error');
 grid on;

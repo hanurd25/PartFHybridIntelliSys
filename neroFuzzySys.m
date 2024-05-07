@@ -1,6 +1,10 @@
-% This mathworks page has been used for inspiration:
+%%Sources
+
+% This mathworks page has been used for inspiration for the neuro-fuzzy system:
 % https://se.mathworks.com/help/fuzzy/anfis.html
 
+%The foundation used for the rule base 2 system can be found here:
+%https://github.com/hanurd25/partDAssignmentFuzzyLogic/blob/main/ruleBase2.m
 
 %%THIS IS THE CODE FOR A RULE BASE 2 SYSTEM
 %% Develop a FIS using command line in matlab
@@ -37,9 +41,7 @@ plotmf(fis,"input",2);
 %% Adding the membership functions for degree_Of_utility
 % levels using trapezoidal membership functions.
 fis = addMF(fis,"degree_Of_utility","trapmf",[-0.5 0.0 0.17 0.35],"Name","low");
-%fis = addMF(fis,"degree_Of_utility","trimf",[0.15 0.3 0.45],"Name","ratherLow");
 fis = addMF(fis,"degree_Of_utility","trimf",[0.3 0.5 0.7],"Name","moderate");
-%fis = addMF(fis,"degree_Of_utility","trimf",[0.55 0.7 85],"Name","ratherHigh");
 fis = addMF(fis,"degree_Of_utility","trapmf",[0.6 0.8 1 1.4],"Name","high");
 
 
@@ -133,7 +135,9 @@ idxTest = test(cv);
 inputsTrain = inputs(idxTrain, :);
 outputsTrain = outputs(idxTrain);
 inputsTest = inputs(idxTest, :);
-%These are my targets
+
+
+%These are the targets
 outputsTest = outputs(idxTest);
 
 
@@ -151,7 +155,6 @@ opt = anfisOptions('InitialFIS', 3, 'EpochNumber', 200, 'InitialStepSize', 0.01,
 [anfisModel, trainError, stepSize, chkFIS] = anfis([inputsTrain, outputsTrain], opt);
 %[anfisModel, trainError, stepSize, chkFIS] = anfis([inputsTrain, outputsTrain], options);
 
-% I have the option to use chkFIS for a more robust model from validation, if it is needed
 
 predictedOutputs = evalfis(anfisModel, inputsTest);
 
@@ -183,10 +186,10 @@ outOfRangeInput = [0.8, 1.2, 1.2]; % Beyond specified input ranges
 %nfOutput = evalfis(anfisModel, outOfRangeInput);
 %fprintf('FIS Output: %.4f\nNeuro-Fuzzy Output: %.4f\n', fisOutput, nfOutput);
 
-%% Adjust out-of-range inputs to the nearest valid range before evaluation
+%% Adjust 
 adjustedInput = min(max(outOfRangeInput, [0 0 0]), [0.7 1 1]);
 
-%% Evaluate the FIS with sets of adjusted inputs
+%% Evaluating the FIS with sets of adjusted inputs
 
 outOfRangeInputs = [
     0.8, 1.2, 1.2;  
@@ -205,6 +208,8 @@ fisOutputs = zeros(size(outOfRangeInputs, 1), 1);
 nfOutputs = zeros(size(outOfRangeInputs, 1), 1);
 
 %Evaluating the FIS and Neuro with adjusted inputs
+
+
 for i = 1:size(outOfRangeInputs, 1)
     adjustedInput = min(max(outOfRangeInputs(i, :), [0 0 0]), [0.7 1 1]);
 
@@ -225,6 +230,58 @@ ylabel('Output Value');
 legend('FIS', 'Neuro-fuzzy');
 set(gca, 'XTick', 1:size(outOfRangeInputs, 1), 'XTickLabel', {'Set 1', 'Set 2', 'Set 3', 'Set 4', 'Set 5'});
 
+%% Evaluating without adjusted inputs
+
+fisOutputs = zeros(size(outOfRangeInputs, 1), 1);
+neuroFisOutputs = zeros(size(outOfRangeInputs, 1), 1);
+
+%Evaluating for each input
+for i = 1:size(outOfRangeInputs, 1)
+    fisOutputs(i) = evalfis(fis, outOfRangeInputs(i, :));
+    neuroFisOutputs(i) = evalfis(anfisModel, outOfRangeInputs(i, :));
+end
+
+figure;
+bar([fisOutputs, neuroFisOutputs]);
+title('FIS and NEURO-FIS Outputs for inputs which is out of range');
+xlabel('Input Set');
+ylabel('Output Value');
+legend('FIS', 'Neuro-FIS');
+set(gca, 'XTick', 1:size(outOfRangeInputs, 1), 'XTickLabel', {'Set 1', 'Set 2', 'Set 3', 'Set 4', 'Set 5'});
+grid on;
+
+
+figure;
+plot(outputsTest, predictedOutputs, 'ko'); % Plot predicted vs. actual as points
+hold on;
+%Ccreating a reference line
+plot([min(outputsTest) max(outputsTest)], [min(outputsTest) max(outputsTest)], 'b--');
+title('Predicted v actual outputs');
+xlabel('Actual');
+ylabel('Predicted');
+grid on;
+legend('Predicted v Actual', 'y = x', 'Location', 'best');
+
+%% Plotting training errors to monitor performance over epochs
+figure;
+plot(trainError);
+title('Training error over epochs/iterations');
+xlabel('Epoch/iterations');
+ylabel('Training error');
+grid on;
+
+
+
+
+
+figure;
+bar([fisOutputs, nfOutputs]);
+title('Comparison of FIS and neuro Outputs for sets with adjusted inputs');
+xlabel('Input set');
+ylabel('Output');
+legend('FIS', 'Neuro-fuzzy');
+set(gca, 'XTick', 1:size(outOfRangeInputs, 1), 'XTickLabel', {'Set 1', 'Set 2', 'Set 3', 'Set 4', 'Set 5'});
+
 
 
 %% Display how the neural fuzzy system would look
@@ -233,26 +290,14 @@ plotfis(anfisModel);
 figure;
 plot(outputsTest, 'bo-', 'DisplayName', 'Actual output');
 hold on;
-plot(predictedOutputs, 'ro-', 'DisplayName', 'Predicted output');
+plot(predictedOutputs, 'ro-', 'DisplayName', 'Predicted');
 title('Comparison of actual and predicted outputs');
-xlabel('Sample index');
-ylabel('HVAC plant output');
+xlabel('Sample');
+ylabel('HVAC output');
 legend show;
 grid on;
-%%
 
-figure;
-plot(outputsTest, predictedOutputs, 'ko'); % Plot predicted vs. actual as points
-hold on;
-%Ccreating a reference line
-plot([min(outputsTest) max(outputsTest)], [min(outputsTest) max(outputsTest)], 'b--');
-title('Predicted Outputs vs. actual outputs');
-xlabel('Actual Outputs');
-ylabel('Predicted Outputs');
-grid on;
-legend('Predicted vs. Actual', 'y = x', 'Location', 'best');
-
-%% Plotting training errors to monitor performance over epochs
+%% Plotting training errors to display performance over epochs
 figure;
 plot(trainError);
 title('Training error over epochs/iterations');

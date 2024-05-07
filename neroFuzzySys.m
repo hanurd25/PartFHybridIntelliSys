@@ -1,4 +1,4 @@
-% This page has been used for inspiration:
+% This mathworks page has been used for inspiration:
 % https://se.mathworks.com/help/fuzzy/anfis.html
 
 

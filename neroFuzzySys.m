@@ -1,3 +1,7 @@
+% This page has been used for inspiration:
+% https://se.mathworks.com/help/fuzzy/anfis.html
+
+
 %%THIS IS THE CODE FOR A RULE BASE 2 SYSTEM
 %% Develop a FIS using command line in matlab
 %mamfis is for Mamdani while sugfis is for sugeno
